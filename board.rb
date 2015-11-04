@@ -10,18 +10,29 @@ class Board
     board.populate_pawn_row("black", 1)
     board.populate_pawn_row("white", 6)
     board.populate_blank_spaces
+    board.populate_possible_moves
     return board
   end
 
-  attr_accessor :grid, :king_pos_hash, :current_piece_valid_moves, :selected_piece_pos, :white_positions, :black_positions
+  attr_accessor :grid, :king_pos_hash, :current_piece_valid_moves, :selected_piece_pos, :white_pieces, :black_pieces
 
   def initialize
     @grid = Array.new(8) { Array.new(8) }
     @king_pos_hash = {}
     @current_piece_valid_moves = []
     @selected_piece_pos = []
-    @white_positions = {}
-    @black_positions = {}
+    @white_pieces = {}
+    @black_pieces = {}
+    @positions_and_dependent_pieces = {}
+  end
+
+  def populate_possible_moves
+    white_pieces.each { |piece, _| change_possible_moves(piece) }
+    black_pieces.each { |piece, _| change_possible_moves(piece) }
+  end
+
+  def change_possible_moves(piece)
+
   end
 
   def in_check?(color)
@@ -51,7 +62,7 @@ class Board
       #   end
       # end
 
-      hash = self.send("#{color}_positions".to_sym)
+      hash = self.send("#{color}_pieces".to_sym)
 
       hash.each do |piece, pos|
         return false unless piece.valid_moves.empty?
@@ -78,7 +89,7 @@ class Board
     piece.moved = true if piece.is_a? Pawn
     self[start_pos] = BlankSpace.new
 
-    hash = self.send("#{piece.color}_positions".to_sym)
+    hash = self.send("#{piece.color}_pieces".to_sym)
     hash[piece] = end_pos
   end
 
@@ -87,7 +98,7 @@ class Board
     self[end_pos] = piece
     piece.pos = end_pos
     self[start_pos] = BlankSpace.new
-    hash = self.send("#{piece.color}_positions".to_sym)
+    hash = self.send("#{piece.color}_pieces".to_sym)
     hash[piece] = end_pos
   end
 
@@ -113,7 +124,7 @@ class Board
 
   def populate_back_row(color, row)
 
-    hash = self.send("#{color}_positions".to_sym)
+    hash = self.send("#{color}_pieces".to_sym)
     left_edge = 0
     right_edge = 7
 
@@ -141,7 +152,7 @@ class Board
   end
 
   def populate_pawn_row(color, row)
-    hash = self.send("#{color}_positions".to_sym)
+    hash = self.send("#{color}_pieces".to_sym)
     8.times do |col|
       self[[row, col]] = Pawn.new(color, [row, col], self)
       hash[self[[row, col]]] = [row, col]
@@ -153,5 +164,5 @@ end
 # # # board[[2, 3]] = Knight.new("white", [2, 3], board)
 # # # p board.king_pos_hash["black"].pos
 # # # p board.in_check?("black")
-# p board.white_positions.values
-# p board.black_positions.values
+# p board.white_pieces.values
+# p board.black_pieces.values

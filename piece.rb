@@ -37,6 +37,10 @@ class Piece
 
     valid_moves_array
   end
+
+  def is_piece?(pos)
+    if board[pos].is_a? Piece
+      
 end
 
 class BlankSpace

@@ -16,7 +16,7 @@ class SlidingPiece < Piece
         if row < 0 || col < 0 || row > 7 || col > 7
           break
         else
-          if board.grid[row][col].is_a? Piece
+          if board[[row, col]].is_a? Piece
             piece = board.grid[row][col]
             if self.color != piece.color
               possible_moves << [row, col]
