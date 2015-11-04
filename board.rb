@@ -13,7 +13,7 @@ class Board
     return board
   end
 
-  attr_accessor :grid, :king_pos_hash, :current_piece_valid_moves, :selected_piece_pos
+  attr_accessor :grid, :king_pos_hash, :current_piece_valid_moves, :selected_piece_pos, :white_positions, :black_positions
 
   def initialize
     @grid = Array.new(8) { Array.new(8) }
@@ -42,14 +42,21 @@ class Board
   def check_mate_color?(color)
     if in_check?(color)
       # debugger
-      grid.each_with_index do |row, row_i|
-        row.each_with_index do |col, col_i|
-          tile = self[[row_i, col_i]]
-          next unless (tile.is_a? Piece) && (tile.color == color)
+      # grid.each_with_index do |row, row_i|
+      #   row.each_with_index do |col, col_i|
+      #     tile = self[[row_i, col_i]]
+      #     next unless (tile.is_a? Piece) && (tile.color == color)
+      #
+      #     return false unless tile.valid_moves.empty?
+      #   end
+      # end
 
-          return false unless tile.valid_moves.empty?
-        end
+      hash = self.send("#{color}_positions".to_sym)
+
+      hash.each do |piece, pos|
+        return false unless piece.valid_moves.empty?
       end
+
     elsif !in_check?(color)
       return false
     end
@@ -70,6 +77,9 @@ class Board
     piece.pos = end_pos
     piece.moved = true if piece.is_a? Pawn
     self[start_pos] = BlankSpace.new
+
+    hash = self.send("#{piece.color}_positions".to_sym)
+    hash[piece] = end_pos
   end
 
   def move!(start_pos, end_pos)
@@ -77,6 +87,8 @@ class Board
     self[end_pos] = piece
     piece.pos = end_pos
     self[start_pos] = BlankSpace.new
+    hash = self.send("#{piece.color}_positions".to_sym)
+    hash[piece] = end_pos
   end
 
   def [](pos)
@@ -100,28 +112,46 @@ class Board
   end
 
   def populate_back_row(color, row)
-    #
-    # self.send("#{color}_positions".to_sym)
 
-    self[[row, 0]] = Rook.new(color, [row, 0], self)
-    self[[row, 7]] = Rook.new(color, [row, 7], self)
-    self[[row, 1]] = Knight.new(color, [row, 1], self)
-    self[[row, 6]] = Knight.new(color, [row, 6], self)
-    self[[row, 2]] = Bishop.new(color, [row, 2], self)
-    self[[row, 5]] = Bishop.new(color, [row, 5], self)
+    hash = self.send("#{color}_positions".to_sym)
+    left_edge = 0
+    right_edge = 7
+
+    populate_hash = {
+      0 => Rook,
+      1 => Knight,
+      2 => Bishop
+    }
+
+    8.times do |col|
+      populate_hash.each do |abso, piece|
+        if (left_edge - col).abs == abso || (right_edge - col).abs == abso
+          self[[row, col]] = piece.new(color, [row, col], self)
+          hash[self[[row, col]]] = [row, col]
+        end
+      end
+    end
+
     self[[row, 3]] = Queen.new(color, [row, 3], self)
+    hash[self[[row, 3]]] = [row, 3]
     self[[row, 4]] = King.new(color, [row, 4], self)
+    hash[self[[row, 4]]] = [row, 4]
+
     king_pos_hash[color] = self[[row, 4]]
   end
 
   def populate_pawn_row(color, row)
+    hash = self.send("#{color}_positions".to_sym)
     8.times do |col|
       self[[row, col]] = Pawn.new(color, [row, col], self)
+      hash[self[[row, col]]] = [row, col]
     end
   end
 end
 #
 # board = Board.populate
-# board[[2, 3]] = Knight.new("white", [2, 3], board)
-# p board.king_pos_hash["black"].pos
-# p board.in_check?("black")
+# # # board[[2, 3]] = Knight.new("white", [2, 3], board)
+# # # p board.king_pos_hash["black"].pos
+# # # p board.in_check?("black")
+# p board.white_positions.values
+# p board.black_positions.values
