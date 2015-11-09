@@ -17,6 +17,7 @@ class Game
       @current_player = @player1
     end
   end
+
   def get_piece
     begin
       selected_piece = @current_player.select_piece
@@ -24,8 +25,7 @@ class Game
       puts "Must select a valid piece"
       retry
     end
-    # highlight code
-    board.current_piece_valid_moves = board[selected_piece].valid_moves
+    board.current_piece_valid_moves = board[selected_piece].moves
     board.selected_piece_pos = selected_piece
   end
 
@@ -39,7 +39,7 @@ class Game
   end
 
   def run
-    until board.check_mate?
+    until false#board.check_mate?
       begin
         selected_piece = get_piece
         selected_valid_move = get_move

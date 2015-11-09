@@ -1,10 +1,13 @@
 require 'byebug'
 require 'colorize'
+require 'set'
 class Piece
-  attr_accessor :pos, :color, :board
+  attr_accessor :pos, :color, :board, :current_possible_moves, :relevant_positions
 
   def initialize(color, pos, board)
     @color, @pos, @board = color, pos, board
+    @current_possible_moves = []
+    @relevant_positions = Set.new
   end
 
   def present?
@@ -40,7 +43,13 @@ class Piece
 
   def is_piece?(pos)
     if board[pos].is_a? Piece
-      
+      board.positions_and_dependent_pieces[pos].add(self)
+      relevant_positions.add(pos)
+      return true
+    end
+    false
+  end
+
 end
 
 class BlankSpace
@@ -75,19 +84,28 @@ class Pawn < Piece
     spaces_allowed.each do |space_allowed|
       if color == "white"
         move = [pos[0] - space_allowed, pos[1]]
-        possible_moves << move unless board.grid[move[0]][move[1]].is_a? Piece
+        unless is_piece?(move)
+          possible_moves << move
+          board.positions_and_dependent_pieces[move].add(self)
+          relevant_positions.add(move)
+        end
         diags = [[pos[0] - 1, pos[1] + 1], [pos[0] - 1, pos[1] - 1]]
       elsif color == "black"
         move = [pos[0] + space_allowed, pos[1]]
-        possible_moves << move unless board.grid[move[0]][move[1]].is_a? Piece
+        unless is_piece?(move)
+          possible_moves << move
+          board.positions_and_dependent_pieces[move].add(self)
+          relevant_positions.add(move)
+        end
         diags = [[pos[0] + 1, pos[1] + 1], [pos[0] + 1, pos[1] - 1]]
       end
     end
 
     diags.each do |diag|
-      piece = board.grid[diag[0]][diag[1]]
-      if piece.is_a? Piece
-        possible_moves << diag if piece.color != self.color
+      board.positions_and_dependent_pieces[diag].add(self)
+      relevant_positions.add(diag)
+      if is_piece?(diag)
+        possible_moves << diag if board[diag].color != self.color
       end
     end
     possible_moves.delete(pos)

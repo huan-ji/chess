@@ -1,6 +1,8 @@
 require_relative 'piece'
 require_relative 'sliding_piece'
 require_relative 'stepping_piece'
+require 'set'
+
 class Board
 
   def self.populate
@@ -14,7 +16,7 @@ class Board
     return board
   end
 
-  attr_accessor :grid, :king_pos_hash, :current_piece_valid_moves, :selected_piece_pos, :white_pieces, :black_pieces
+  attr_accessor :grid, :king_pos_hash, :current_piece_valid_moves, :selected_piece_pos, :white_pieces, :black_pieces, :positions_and_dependent_pieces
 
   def initialize
     @grid = Array.new(8) { Array.new(8) }
@@ -23,7 +25,7 @@ class Board
     @selected_piece_pos = []
     @white_pieces = {}
     @black_pieces = {}
-    @positions_and_dependent_pieces = {}
+    @positions_and_dependent_pieces = Hash.new { |k, v| v = Set.new }
   end
 
   def populate_possible_moves
@@ -32,7 +34,10 @@ class Board
   end
 
   def change_possible_moves(piece)
-
+    # colored_pieces_hash = self.send("#{piece.color}_pieces".to_sym)
+    piece.relevant_positions.each { |pos| positions_and_dependent_pieces[pos].delete(piece) } unless piece.relevant_positions.empty?
+    piece.relevant_positions = Set.new
+    piece.current_possible_moves = piece.moves.to_set
   end
 
   def in_check?(color)
@@ -88,9 +93,12 @@ class Board
     piece.pos = end_pos
     piece.moved = true if piece.is_a? Pawn
     self[start_pos] = BlankSpace.new
-
-    hash = self.send("#{piece.color}_pieces".to_sym)
-    hash[piece] = end_pos
+    [start_pos, end_pos].each do |pos|
+      impacted_pieces_set = positions_and_dependent_pieces[pos].to_a
+      impacted_pieces_set.each do |piece|
+        change_possible_moves(piece)
+      end
+    end
   end
 
   def move!(start_pos, end_pos)
@@ -118,6 +126,7 @@ class Board
     (2..5).each do |row|
       (0..7).each do |col|
         self[[row, col]] = BlankSpace.new
+        positions_and_dependent_pieces[[row, col]] = Set.new
       end
     end
   end
@@ -138,15 +147,18 @@ class Board
       populate_hash.each do |abso, piece|
         if (left_edge - col).abs == abso || (right_edge - col).abs == abso
           self[[row, col]] = piece.new(color, [row, col], self)
-          hash[self[[row, col]]] = [row, col]
+          hash[self[[row, col]]] = []
+          positions_and_dependent_pieces[[row, col]] = Set.new
         end
       end
     end
 
     self[[row, 3]] = Queen.new(color, [row, 3], self)
-    hash[self[[row, 3]]] = [row, 3]
+    hash[self[[row, 3]]] = []
+    positions_and_dependent_pieces[[row, 3]] = Set.new
     self[[row, 4]] = King.new(color, [row, 4], self)
-    hash[self[[row, 4]]] = [row, 4]
+    hash[self[[row, 4]]] = []
+    positions_and_dependent_pieces[[row, 4]] = Set.new
 
     king_pos_hash[color] = self[[row, 4]]
   end
@@ -155,7 +167,8 @@ class Board
     hash = self.send("#{color}_pieces".to_sym)
     8.times do |col|
       self[[row, col]] = Pawn.new(color, [row, col], self)
-      hash[self[[row, col]]] = [row, col]
+      hash[self[[row, col]]] = []
+      positions_and_dependent_pieces[[row, col]] = Set.new
     end
   end
 end

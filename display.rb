@@ -30,7 +30,7 @@ class Display
     # debugger
     if [i, j] == @cursor_pos
       bg = :green
-    elsif (board[@cursor_pos].is_a? Piece) && (board[@cursor_pos].valid_moves.include? [i, j])
+    elsif (board[@cursor_pos].is_a? Piece) && (board[@cursor_pos].current_possible_moves.include?([i, j]))
       bg = :yellow
     elsif board.selected_piece_pos == [i, j]
       bg = :light_red

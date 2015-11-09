@@ -12,12 +12,15 @@ class SlidingPiece < Piece
       until queue.empty?
         shifted_pos = queue.shift
         possible_moves << shifted_pos
+        # debugger
+        board.positions_and_dependent_pieces[shifted_pos].add(self)
+        relevant_positions.add(shifted_pos)
         row, col = shifted_pos[0] + dir[0], shifted_pos[1] + dir[1]
         if row < 0 || col < 0 || row > 7 || col > 7
           break
         else
-          if board[[row, col]].is_a? Piece
-            piece = board.grid[row][col]
+          if is_piece?([row, col])
+            piece = board[[row, col]]
             if self.color != piece.color
               possible_moves << [row, col]
               break
@@ -42,7 +45,7 @@ class Rook < SlidingPiece
     super(color, pos, board)
     color == "black" ? @sym = "♜" : @sym = "♖"
   end
-
+  
   def move_dirs
     dirs = [
       [1, 0],
